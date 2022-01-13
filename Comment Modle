@@ -1,0 +1,59 @@
+import jieba
+import snownlp
+import pandas as pd
+import numpy as np
+
+with open('/content/drive/My Drive/Colab Notebooks/jieba/stops.txt', 'r', encoding='utf8') as f:  # 中文的停用字
+    stops = f.read().split('\n') 
+    
+#增加用詞
+s = ['沒','都','沒有','很','不','不要','請','好','嗎','因為','希望','熊貓','真的','然後','圖檔','無法','今天','已經','請問','一起','可不可以','�',\
+     '再','不是','什麼','不會','不能','這個','還是','一樣','一個','到底','非常','一次','一點','一堆','不用','常常','一下','給我','明明','怎麼','這次'\
+    '還沒','這麼','這是','還有','根本','這位','現在','以後','怎樣','之後','每次','是不是','一定','應該','越來越','太']
+for w in s:
+    stops.append(w)
+   
+
+#載入訓練資料庫
+df_train=pd.read_excel("/content/drive/My Drive/Colab Notebooks/Python/Tools/train_2.0.xlsx")
+
+#斷詞並刪除停用詞
+def cut(mytext):
+    terms = [t for t in jieba.cut(mytext) if t not in stops]
+    return " ".join(terms)
+#斷詞
+def chinese_word_cut(mytext):
+    return " ".join(jieba.cut(mytext))
+
+#拆解評論內容
+df_train['comment'] = df_train.內容
+# df_train['comment'] = df_train.內容.apply(chinese_word_cut)
+
+#模型用訓練資料
+X=df_train['comment']
+y=df_train['分類']
+
+#文字量化模型
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+# feature_extractor = TfidfVectorizer(
+#                        token_pattern=r'(?u)\b\w+\b',max_df = 0.6)
+feature_extractor = CountVectorizer(
+            analyzer="word", ngram_range=(1, 2), binary=True,
+            token_pattern=r'([a-zA-Z]+|\w)')
+X1 = feature_extractor.fit_transform(X)
+
+#分類模型
+from sklearn.linear_model import LogisticRegression
+INTENT_CLASSIFY_REGULARIZATION = "l2"
+
+lr = LogisticRegression(penalty=INTENT_CLASSIFY_REGULARIZATION,
+             class_weight='balanced',max_iter=1000)
+lr.fit(X1, y)
+
+#分類功能
+def category(text):
+    text=[text]
+    X = feature_extractor.transform(text)
+    category = lr.predict(X)
+    return ''.join(category)
