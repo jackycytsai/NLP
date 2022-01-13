@@ -1,0 +1,64 @@
+import jieba 
+from collections import Counter
+from PIL import Image # 圖片轉array陣列
+import matplotlib.pyplot as plt
+import pandas, numpy
+import wordcloud #文字雲
+
+with open('/content/drive/My Drive/Colab Notebooks/jieba/stops.txt', 'r', encoding='utf8') as f:  # 中文的停用字
+    stops = f.read().split('\n') 
+    
+#增加用詞
+s = ['沒','都','沒有','很','不','不要','請','好','嗎','因為','希望','熊貓','真的','然後','圖檔','無法','今天','已經','請問','一起','可不可以','�',\
+     '再','不是','什麼','不會','不能','這個','還是','一樣','一個','到底','非常','一次','一點','一堆','不用','常常','一下','給我','明明','怎麼','這次'\
+    '還沒','這麼','這是','還有','根本','這位','現在','以後','怎樣','之後','每次','是不是','一定','應該','越來越','太','未','收到','1','2','3','4','5','01','無','no','才']
+for w in s:
+    stops.append(w)
+    
+stops.append('foodpanda')
+stops.append('see')
+stops.append('See')
+stops.append('more')
+    
+#自訂義辭典
+jieba.load_userdict(r'/content/drive/My Drive/Colab Notebooks/Tools/userDict.txt')
+
+#載入檔案
+
+
+#用jieba.lcut(text, cut_all=False)直接返回list
+#segs = jieba.cut(text1,cut_all=True) # 全切模式 切的很碎
+#segs = jieba.cut(Kexyword,cut_all=False) # 預設模式
+seg_list = jieba.lcut(x,cut_all=False) # lcut直接返回list
+
+#刪除停用詞
+terms = []
+for t in seg_list:
+    if  t not in stops:
+        terms.append(t)
+        
+#統計詞數量
+dic = Counter(terms)
+
+#文字雲設定
+font_path=r'/content/drive/My Drive/Colab Notebooks/Tools/SourceHanSansTW-Regular.otf'
+mask = numpy.array(Image.open(r'/content/drive/My Drive/Colab Notebooks/Tools/panda.jpg')) # 遮罩
+#mask=(mask==0)*255 # 把舉證等於0的地方變成255 原本有數字的地方變0
+
+wc = wordcloud.WordCloud(background_color='#ffffff',#white,f1f2f2
+                         margin=2, # 文字間距
+                         mask=mask,# 遮罩 有用的話則無視設定長寬
+                         colormap='Paired',#viridis #顏色主題
+                         font_path=font_path,# 設定字體
+                         max_words=100, # 取多少文字在裡面
+                         width=800, height=600, # 長寬解析度
+                         relative_scaling=0.6 # 詞頻與詞大小關聯性
+                         )
+
+# 生成文字雲
+wc.generate_from_frequencies(dic) # 吃入次數字典資料
+
+# 顯示文字雲
+plt.figure(figsize=(12,10))
+plt.imshow(wc)
+#wc.to_file("wordcloud-nps2021.jpg")
